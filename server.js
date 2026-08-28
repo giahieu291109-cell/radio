@@ -42,7 +42,7 @@ const script = [
    "Và… đừng thức thêm nữa."]
 ];
 
-app.use(express.static("public"));
+app.use(express.static("."));
 
 app.get("/api/script", (_req, res) => {
   res.json(script.map(([title, text]) => ({ title, text })));
