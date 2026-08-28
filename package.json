@@ -1,0 +1,11 @@
+{
+  "name": "night-fm-elevenlabs",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "@elevenlabs/elevenlabs-js": "latest",
+    "dotenv": "latest",
+    "express": "latest"
+  }
+}
