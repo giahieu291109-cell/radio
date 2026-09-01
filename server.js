@@ -18,10 +18,10 @@ const VOICE_ID = "BijSH9BdCr6Rjvve6ObU";
 const MODEL_ID = "eleven_v3";
 
 const script = [
-  ["NIGHT FM — 01:40 AM",
+  ["NIGHT FM — 2:19 AM",
    "Xin chào… bạn đang nghe NIGHT FM, tần số 98.7 MHz."],
   ["BẢN TIN ĐÊM",
-   "Hiện tại là 1 giờ 40 phút sáng."],
+   "Hiện tại là 2 giờ 19 phút sáng."],
   ["TIN KHẨN",
    "Một người vẫn đang online… và người đó vẫn chưa chịu đi ngủ."],
   ["BỘ PHẬN KỸ THUẬT",
