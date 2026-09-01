@@ -1,90 +1,94 @@
-<!doctype html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NIGHT FM — 01:40</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:#07080b;color:#eee8dc;font-family:Georgia,serif;display:grid;place-items:center;overflow:hidden}
-body:before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 50% 35%,#292830 0,#111217 38%,#050608 78%);z-index:-2}
-.radio{width:min(92vw,540px);padding:30px;border:1px solid #393941;border-radius:24px;background:linear-gradient(145deg,#18191e,#0d0e12);box-shadow:0 30px 90px #000c,inset 0 1px #ffffff10}
-.top{display:flex;justify-content:space-between;font:11px monospace;letter-spacing:3px;color:#999}
-.on{color:#ff625c}.dot{display:inline-block;width:7px;height:7px;background:#f55;border-radius:50%;margin-right:7px;box-shadow:0 0 12px #f55;animation:b 1s infinite}
-@keyframes b{50%{opacity:.2}}
-h1{text-align:center;font-size:clamp(48px,14vw,72px);font-weight:normal;letter-spacing:8px;margin:28px 0 5px}
-.sub{text-align:center;color:#888;font:11px monospace;letter-spacing:3px}.freq{text-align:center;margin:24px;font:14px monospace;color:#bbb}
-.screen{min-height:190px;padding:25px;border:1px solid #383940;border-radius:12px;background:#090a0c;text-align:center;display:grid;place-items:center}
-.status{font:10px monospace;letter-spacing:2px;color:#777;margin-bottom:14px}.text{font-size:21px;line-height:1.7}
-button{display:block;margin:24px auto 0;border:0;border-radius:99px;padding:14px 27px;background:#ddd5c5;color:#111;font:bold 12px monospace;letter-spacing:2px;cursor:pointer}
-button:disabled{opacity:.5}.hint{text-align:center;color:#555;font:10px monospace;margin-top:15px}
-</style>
-</head>
-<body>
-<main class="radio">
-<div class="top"><span>NIGHT FM</span><span class="on"><i class="dot"></i>ON AIR</span></div>
-<h1>01:40</h1><div class="sub">THE MIDNIGHT FREQUENCY</div><div class="freq">98.7 MHz</div>
-<section class="screen"><div><div class="status" id="status">STANDBY</div><div class="text" id="text">Bấm PLAY để mở chương trình đêm nay.</div></div></section>
-<button id="play">▶ PLAY RADIO</button>
-<div class="hint">ELEVENLABS • NIGHT BROADCAST</div>
-<audio id="audio" preload="auto"></audio>
-</main>
 <script>
-let script=[], index=0, running=false;
-const statusEl=document.getElementById("status");
-const textEl=document.getElementById("text");
-const play=document.getElementById("play");
-const audio=document.getElementById("audio");
+let script = [];
+let index = 0;
+let running = false;
 
-async function loadScript(){
-  const r=await fetch("/api/script");
-  script=await r.json();
+const statusEl = document.getElementById("status");
+const textEl = document.getElementById("text");
+const play = document.getElementById("play");
+const audio = document.getElementById("audio");
+
+async function loadScript() {
+    const response = await fetch("/api/script");
+
+    if (!response.ok) {
+        throw new Error("Cannot load script");
+    }
+
+    script = await response.json();
 }
 
-async function next(){
-  if(index>=script.length){
-    statusEl.textContent="BROADCAST ENDED";
-    textEl.textContent="🌙 GOOD NIGHT";
-    play.textContent="✓ END OF BROADCAST";
-    play.disabled=true;
-    return;
-  }
+function next() {
+    if (index >= script.length) {
+        statusEl.textContent = "BROADCAST ENDED";
+        textEl.textContent = "🌙 GOOD NIGHT";
+        play.textContent = "✓ END OF BROADCAST";
+        play.disabled = true;
+        return;
+    }
 
-  const item=script[index];
-  statusEl.textContent=item.title || "NIGHT FM";
-  textEl.textContent=item.text;
+    const item = script[index];
+    const currentIndex = index++;
 
-  audio.src="/api/tts/"+index;
-  index++;
+    statusEl.textContent = item.title || "NIGHT FM";
+    textEl.textContent = item.text;
 
-  try{
-    await audio.play();
-  }catch(e){
-    textEl.textContent="Bấm PLAY lại để cho phép phát âm thanh.";
-    running=false;
-    play.disabled=false;
-    return;
-  }
+    /*
+     * QUAN TRỌNG:
+     * Gán src + play() ngay lập tức.
+     * Không fetch trước khi play().
+     */
+    audio.src = "/api/tts/" + currentIndex;
+    audio.load();
 
-  audio.onended=()=>setTimeout(next,700);
+    const promise = audio.play();
+
+    if (promise !== undefined) {
+        promise.catch(error => {
+            console.error("Audio playback error:", error);
+
+            statusEl.textContent = "AUDIO ERROR";
+            textEl.textContent =
+                "Trình duyệt chặn âm thanh. Hãy bấm PLAY lại.";
+
+            running = false;
+            play.disabled = false;
+            play.textContent = "▶ PLAY RADIO";
+        });
+    }
 }
 
-play.addEventListener("click",async()=>{
-  if(running)return;
-  running=true;
-  play.disabled=true;
-  play.textContent="● BROADCASTING";
-  try{
-    if(!script.length) await loadScript();
-    next();
-  }catch(e){
-    statusEl.textContent="ERROR";
-    textEl.textContent="Không kết nối được server.";
-    running=false;
-    play.disabled=false;
-    play.textContent="↻ TRY AGAIN";
-  }
+audio.addEventListener("ended", () => {
+    setTimeout(next, 800);
+});
+
+play.addEventListener("click", async () => {
+    if (running) return;
+
+    running = true;
+    play.disabled = true;
+    play.textContent = "● BROADCASTING";
+
+    try {
+        if (script.length === 0) {
+            await loadScript();
+        }
+
+        /*
+         * Sau khi load script xong, next() sẽ gán audio
+         * và gọi play() ngay lập tức.
+         */
+        next();
+
+    } catch (error) {
+        console.error(error);
+
+        statusEl.textContent = "ERROR";
+        textEl.textContent = "Không tải được chương trình.";
+
+        running = false;
+        play.disabled = false;
+        play.textContent = "↻ TRY AGAIN";
+    }
 });
 </script>
-</body>
-</html>
