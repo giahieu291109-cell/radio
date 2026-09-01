@@ -14,7 +14,7 @@ const elevenlabs = new ElevenLabsClient({
   apiKey: process.env.ELEVENLABS_API_KEY
 });
 
-const VOICE_ID = "UsgbMVmY3U59ijwK5mdh";
+const VOICE_ID = "BijSH9BdCr6Rjvve6ObU";
 const MODEL_ID = "eleven_v3";
 
 const script = [
